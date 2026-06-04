@@ -3,24 +3,24 @@ import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { parseEnvOrigins } from './utils/parse-env-origins';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
-const getCorsAllowedOrigins = () => {
-  return parseEnvOrigins(process.env.CLIENT_URL, process.env.CORS_OTHER_URL);
+const getCorsAllowedOrigins = (config: ConfigService) => {
+  return parseEnvOrigins(
+    config.get<string>('CLIENT_URL'),
+    config.get<string>('CORS_OTHER_URL'),
+  );
 };
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const corsAllowedOrigins = getCorsAllowedOrigins();
-  app.enableCors({
-    origin: corsAllowedOrigins,
-    credentials: true,
-  });
-
   app.use(cookieParser());
 
+  const config = app.get(ConfigService);
+
   // CORS
-  const allowList = getCorsAllowedOrigins();
+  const allowList = getCorsAllowedOrigins(config);
   app.enableCors({
     origin: (requestOrigin: string, callBack) => {
       if (!requestOrigin) {
@@ -63,6 +63,6 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  await app.listen(process.env.PORT ?? 8080);
+  await app.listen(config.get<number>('PORT') ?? 8080);
 }
 bootstrap();
